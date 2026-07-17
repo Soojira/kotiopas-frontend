@@ -85,8 +85,6 @@ const GLOBAL=`
 
 function fmt(n){return Math.round(n||0).toLocaleString("fi-FI");}
 
-function GoldLine(){return <div style={{height:1,background:`linear-gradient(90deg,transparent,${C.gold},transparent)`,margin:"4px 0"}}/>;}
-
 function DarkCard({children,style={}}){
   return(
     <div style={{background:"linear-gradient(160deg,#2A1F14,#1E3020)",borderRadius:14,overflow:"hidden",position:"relative",...style}}>
@@ -151,13 +149,13 @@ function Pill({children,active,onClick}){
   );
 }
 
-function FloatInput({label,type="text",value,onChange}){
+function FloatInput({label,type="text",value,onChange,autoComplete,inputMode}){
   const [f,setF]=useState(false);
   const up=f||value;
   return(
     <div style={{position:"relative"}}>
       <label style={{position:"absolute",left:14,top:up?8:"50%",transform:up?"none":"translateY(-50%)",fontSize:up?10:14,letterSpacing:up?1.5:0,textTransform:up?"uppercase":"none",color:f?C.clay:C.stone,fontFamily:B,transition:"all 0.2s",pointerEvents:"none",zIndex:1}}>{label}</label>
-      <input type={type} value={value} onChange={onChange}
+      <input type={type} value={value} onChange={onChange} autoComplete={autoComplete} inputMode={inputMode}
         style={{width:"100%",padding:up?"22px 14px 8px":"16px 14px",background:f?C.paper:C.cream,border:`1.5px solid ${f?C.clay:C.border}`,borderRadius:10,fontFamily:B,fontSize:15,color:C.ink,outline:"none",transition:"all 0.2s",boxSizing:"border-box"}}
         onFocus={()=>setF(true)} onBlur={()=>setF(false)}/>
     </div>
@@ -177,16 +175,6 @@ function FloatSelect({label,value,onChange,children}){
   );
 }
 
-function SectionHead({num,title}){
-  return(
-    <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,marginTop:8}}>
-      <span style={{fontFamily:H,fontSize:13,color:C.clay,fontStyle:"italic"}}>{num}</span>
-      <div style={{height:1,flex:1,background:`linear-gradient(90deg,${C.linen},transparent)`}}/>
-      <span style={{fontFamily:B,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:C.stone}}>{title}</span>
-    </div>
-  );
-}
-
 function DarkBtn({children,onClick,style={}}){
   return(
     <button onClick={onClick}
@@ -195,17 +183,6 @@ function DarkBtn({children,onClick,style={}}){
       onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 8px 32px rgba(42,31,20,0.2)"}}>
       {children}
     </button>
-  );
-}
-
-function Modal({onClose,children}){
-  return(
-    <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{position:"fixed",inset:0,background:"rgba(42,31,20,0.7)",backdropFilter:"blur(6px)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-      <div style={{background:C.paper,borderRadius:16,maxWidth:400,width:"100%",padding:"32px 28px",position:"relative",boxShadow:"0 24px 80px rgba(42,31,20,0.4)"}}>
-        <button onClick={onClose} style={{position:"absolute",top:14,right:18,background:"none",border:"none",fontSize:22,cursor:"pointer",color:C.stone,lineHeight:1}}>×</button>
-        {children}
-      </div>
-    </div>
   );
 }
 
@@ -279,6 +256,7 @@ function TabKonsultaatio(){
   async function laheta(){
     if(!liidi.nimi||!liidi.puhelin){setError(t(lang,"Nimi ja puhelin ovat pakollisia.","Name and phone are required."));return;}
     if(!liidi.email){setError(t(lang,"Sähköposti on pakollinen.","Email is required."));return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(liidi.email)){setError(t(lang,"Tarkista sähköpostiosoitteen muoto.","Please check the email address format."));return;}
     if(!liidi.katuosoite||!liidi.postinumero||!liidi.kaupunki){setError(t(lang,"Täytä katuosoite, postinumero ja kaupunki.","Fill in the street address, postal code and city."));return;}
     if(!gdpr){setError(t(lang,"Hyväksy tietosuojakäytäntö ennen lähetystä.","Please accept the privacy policy before sending."));return;}
     setError(null);setSending(true);
@@ -360,15 +338,15 @@ function TabKonsultaatio(){
       </div>
 
       <div style={{display:"grid",gap:10,marginBottom:16}}>
-        <FloatInput label={t(lang,"Nimi *","Name *")} value={liidi.nimi} onChange={e=>set("nimi",e.target.value)}/>
+        <FloatInput label={t(lang,"Nimi *","Name *")} autoComplete="name" value={liidi.nimi} onChange={e=>set("nimi",e.target.value)}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <FloatInput label={t(lang,"Puhelin *","Phone *")} type="tel" value={liidi.puhelin} onChange={e=>set("puhelin",e.target.value)}/>
-          <FloatInput label={t(lang,"Sähköposti *","Email *")} type="email" value={liidi.email} onChange={e=>set("email",e.target.value)}/>
+          <FloatInput label={t(lang,"Puhelin *","Phone *")} type="tel" autoComplete="tel" value={liidi.puhelin} onChange={e=>set("puhelin",e.target.value)}/>
+          <FloatInput label={t(lang,"Sähköposti *","Email *")} type="email" autoComplete="email" value={liidi.email} onChange={e=>set("email",e.target.value)}/>
         </div>
-        <FloatInput label={t(lang,"Katuosoite *","Street address *")} value={liidi.katuosoite} onChange={e=>set("katuosoite",e.target.value)}/>
+        <FloatInput label={t(lang,"Katuosoite *","Street address *")} autoComplete="street-address" value={liidi.katuosoite} onChange={e=>set("katuosoite",e.target.value)}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <FloatInput label={t(lang,"Postinumero *","Postal code *")} value={liidi.postinumero} onChange={e=>set("postinumero",e.target.value)}/>
-          <FloatInput label={t(lang,"Kaupunki *","City *")} value={liidi.kaupunki} onChange={e=>set("kaupunki",e.target.value)}/>
+          <FloatInput label={t(lang,"Postinumero *","Postal code *")} autoComplete="postal-code" inputMode="numeric" value={liidi.postinumero} onChange={e=>set("postinumero",e.target.value)}/>
+          <FloatInput label={t(lang,"Kaupunki *","City *")} autoComplete="address-level2" value={liidi.kaupunki} onChange={e=>set("kaupunki",e.target.value)}/>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           <FloatSelect label={t(lang,"Asuntotyyppi","Property type")} value={liidi.tyyppi} onChange={e=>set("tyyppi",e.target.value)}>
@@ -417,6 +395,7 @@ function LiidiLomake({otsikko,alaotsikko,hyodyt,brevoTyyppi,lisatietoLabel,nappi
   async function laheta(){
     if(!liidi.nimi||!liidi.puhelin){setError(t(lang,"Nimi ja puhelin ovat pakollisia.","Name and phone are required."));return;}
     if(!liidi.email){setError(t(lang,"Sähköposti on pakollinen.","Email is required."));return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(liidi.email)){setError(t(lang,"Tarkista sähköpostiosoitteen muoto.","Please check the email address format."));return;}
     if(!liidi.katuosoite||!liidi.postinumero||!liidi.kaupunki){setError(t(lang,"Täytä katuosoite, postinumero ja kaupunki.","Fill in the street address, postal code and city."));return;}
     if(!gdpr){setError(t(lang,"Hyväksy tietosuojakäytäntö ennen lähetystä.","Please accept the privacy policy before sending."));return;}
     setError(null);setSending(true);
@@ -478,15 +457,15 @@ function LiidiLomake({otsikko,alaotsikko,hyodyt,brevoTyyppi,lisatietoLabel,nappi
       </div>
 
       <div style={{display:"grid",gap:10,marginBottom:16}}>
-        <FloatInput label={t(lang,"Nimi *","Name *")} value={liidi.nimi} onChange={e=>set("nimi",e.target.value)}/>
+        <FloatInput label={t(lang,"Nimi *","Name *")} autoComplete="name" value={liidi.nimi} onChange={e=>set("nimi",e.target.value)}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <FloatInput label={t(lang,"Puhelin *","Phone *")} type="tel" value={liidi.puhelin} onChange={e=>set("puhelin",e.target.value)}/>
-          <FloatInput label={t(lang,"Sähköposti *","Email *")} type="email" value={liidi.email} onChange={e=>set("email",e.target.value)}/>
+          <FloatInput label={t(lang,"Puhelin *","Phone *")} type="tel" autoComplete="tel" value={liidi.puhelin} onChange={e=>set("puhelin",e.target.value)}/>
+          <FloatInput label={t(lang,"Sähköposti *","Email *")} type="email" autoComplete="email" value={liidi.email} onChange={e=>set("email",e.target.value)}/>
         </div>
-        <FloatInput label={t(lang,"Katuosoite *","Street address *")} value={liidi.katuosoite} onChange={e=>set("katuosoite",e.target.value)}/>
+        <FloatInput label={t(lang,"Katuosoite *","Street address *")} autoComplete="street-address" value={liidi.katuosoite} onChange={e=>set("katuosoite",e.target.value)}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          <FloatInput label={t(lang,"Postinumero *","Postal code *")} value={liidi.postinumero} onChange={e=>set("postinumero",e.target.value)}/>
-          <FloatInput label={t(lang,"Kaupunki *","City *")} value={liidi.kaupunki} onChange={e=>set("kaupunki",e.target.value)}/>
+          <FloatInput label={t(lang,"Postinumero *","Postal code *")} autoComplete="postal-code" inputMode="numeric" value={liidi.postinumero} onChange={e=>set("postinumero",e.target.value)}/>
+          <FloatInput label={t(lang,"Kaupunki *","City *")} autoComplete="address-level2" value={liidi.kaupunki} onChange={e=>set("kaupunki",e.target.value)}/>
         </div>
         {naytaTyyppiKoko&&(
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -1561,7 +1540,7 @@ export default function App(){
       </div>
 
       <div style={{background:C.paper,borderTop:`1px solid ${C.border}`,padding:"24px 24px calc(24px + env(safe-area-inset-bottom))",textAlign:"center"}}>
-        <div style={{fontFamily:H,fontSize:14,fontStyle:"italic",color:C.stone,marginBottom:4}}>Asuntoraportti</div>
+        <button onClick={()=>setMode(null)} title={t(lang,"Etusivulle","To home")} style={{background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:H,fontSize:14,fontStyle:"italic",color:C.stone,marginBottom:4,display:"inline-block"}}>Asuntoraportti</button>
         <div style={{fontFamily:B,fontSize:11,color:C.linen,letterSpacing:1,marginBottom:10}}>© 2026 Miss S Tmi — {t(lang,"Asuntokaupan paras apuri","Your best companion in home buying")}</div>
         <div style={{fontFamily:B,fontSize:10,color:C.gold,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{t(lang,"Oppaat","Guides")}</div>
         <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:14,flexWrap:"wrap",marginBottom:16}}>
