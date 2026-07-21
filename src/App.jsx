@@ -742,7 +742,7 @@ function RaporttiText({text}){
     if(lista.length){
       const nykyinen=lista.slice();
       elementit.push(
-        <ul key={"ul-"+avain} style={{margin:"4px 0 14px",paddingLeft:22}}>
+        <ul key={"ul-"+avain} data-lohko="1" style={{margin:"4px 0 14px",paddingLeft:22}}>
           {nykyinen.map((it,i)=>(
             <li key={i} style={{fontFamily:B,fontSize:14,color:C.ink,lineHeight:1.7,marginBottom:6,fontWeight:300}}>{renderInline(it)}</li>
           ))}
@@ -780,7 +780,7 @@ function RaporttiText({text}){
         // ── KORTIT ──────────────────────────────────────────────────────
         // Viimeinen rivi (esim. "Arvioitu yhteensä") korostetaan tummalla kortilla.
         elementit.push(
-          <div key={"kortit-"+idx} style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,margin:"8px 0 16px"}}>
+          <div key={"kortit-"+idx} data-lohko="1" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,margin:"8px 0 16px"}}>
             {dataRivit.map((rivi,ri)=>{
               const viimeinen=ri===dataRivit.length-1;
               const nimi=rivi[0]||"";
@@ -805,7 +805,7 @@ function RaporttiText({text}){
       } else {
         // ── RIVILISTA ───────────────────────────────────────────────────
         elementit.push(
-          <div key={"taulu-"+idx} style={{background:C.cream,borderRadius:10,padding:"6px 16px",margin:"8px 0 16px"}}>
+          <div key={"taulu-"+idx} data-lohko="1" style={{background:C.cream,borderRadius:10,padding:"6px 16px",margin:"8px 0 16px"}}>
             {dataRivit.map((rivi,ri)=>{
               const viimeinen=ri===dataRivit.length-1;
               const nimi=rivi[0]||"";
@@ -833,14 +833,14 @@ function RaporttiText({text}){
       viimeisinOtsikko=sisalto; // seuraa otsikkoa (jotta tiedämme onko Kuukausikulut-osio)
       const koko=h1?24:h2?20:17;
       elementit.push(
-        <div key={idx} data-otsikko="1" style={{fontFamily:H,fontSize:koko,fontStyle:"italic",color:C.ink,margin:"20px 0 8px",lineHeight:1.25}}>{renderInline(sisalto)}</div>
+        <div key={idx} data-otsikko="1" data-lohko="1" style={{fontFamily:H,fontSize:koko,fontStyle:"italic",color:C.ink,margin:"20px 0 8px",lineHeight:1.25}}>{renderInline(sisalto)}</div>
       );
     } else if(bullet){
       lista.push(bullet[1]);
     } else {
       purgeLista(idx);
       elementit.push(
-        <p key={idx} style={{fontFamily:B,fontSize:14,color:C.ink,lineHeight:1.75,marginBottom:12,fontWeight:300}}>{renderInline(t)}</p>
+        <p key={idx} data-lohko="1" style={{fontFamily:B,fontSize:14,color:C.ink,lineHeight:1.75,marginBottom:12,fontWeight:300}}>{renderInline(t)}</p>
       );
     }
   }
@@ -940,18 +940,23 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
 
       const c_dark=[42,31,20], c_gold=[201,168,76], c_cream=[251,243,226], c_stone=[110,100,88];
 
-      // ── OTSIKOIDEN TODELLISET SIJAINNIT ──────────────────────────────
-      // Pikseleistä arvaaminen ei ole luotettavaa (raportissa on värillisiä
-      // laatikoita, reunaviivoja ja taulukoita). Mitataan sen sijaan suoraan
-      // DOM:ista, missä kukin otsikko alkaa, ja muunnetaan canvas-pikseleiksi.
+      // ── LOHKOJEN RAJAT ───────────────────────────────────────────────
+      // Mitataan DOM:ista jokaisen sisältölohkon (otsikko, kappale, lista,
+      // korttiruudukko, taulukko) ylä- ja alareuna. Sivu saa katketa VAIN
+      // lohkojen väliltä — näin taulukko tai korttiryhmä ei koskaan halkea.
       const skaala=canvas.height/(elementti.offsetHeight||1);
       const elTop=elementti.getBoundingClientRect().top;
-      const otsikkoYt=Array.from(elementti.querySelectorAll("[data-otsikko]"))
-        .map(h=>(h.getBoundingClientRect().top-elTop)*skaala)
-        .filter(y=>y>0&&y<canvas.height)
-        .sort((a,b)=>a-b);
-      // Otsikon yläpuolinen tyhjä tila on 20px (CSS) → leikataan sen sisään
-      const otsikkoMarginaali=Math.round(10*skaala);
+      const lohkot=Array.from(elementti.querySelectorAll("[data-lohko]"))
+        .map(el=>{const r=el.getBoundingClientRect();
+          return {yla:(r.top-elTop)*skaala, ala:(r.bottom-elTop)*skaala};})
+        .filter(l=>l.ala>l.yla)
+        .sort((a,b)=>a.yla-b.yla);
+      // Sallitut leikkauskohdat = lohkojen väliin jäävät raot
+      const rajat=[];
+      for(let i=0;i<lohkot.length-1;i++){
+        const vali=(lohkot[i].ala+lohkot[i+1].yla)/2;
+        if(vali>0&&vali<canvas.height) rajat.push({y:vali, seuraava:lohkot[i+1]});
+      }
 
       // Skaala: montako canvas-pikseliä vastaa yhtä mm:ä (kuvan leveys → kuvaLeveys mm)
       const pxPerMm=canvas.width/kuvaLeveys;
@@ -959,59 +964,24 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
       const sivuPx=Math.floor(sisaltoKorkeus*pxPerMm);
 
       // ── ÄLYKÄS LEIKKAUS ──────────────────────────────────────────────
-      // Ensisijainen sääntö: käytä DOM:ista mitattuja otsikkosijainteja.
-      // Jos otsikko alkaisi aivan sivun loppuun, leikataan sen yläpuolelta,
-      // jolloin otsikko siirtyy seuraavalle sivulle sisältönsä kanssa.
-      // Varalla pikselipohjainen tyhjän rivin haku (kirkkauteen perustuva).
-      const ctxFull=canvas.getContext("2d");
-      // "Tyhjä rivi" = rivillä ei ole tummia pikseleitä (tekstiä/grafiikkaa).
-      // HUOM: ei verrata paperin sävyyn, koska raportissa on kortteja,
-      // reunaviivoja ja taulukoita joiden taustat poikkeavat paperista.
-      function riviTyhja(y){
-        if(y<0||y>=canvas.height) return false;
-        let data;
-        try{ data=ctxFull.getImageData(0,y,canvas.width,1).data; }catch(e){ return false; }
-        for(let x=0;x<canvas.width;x+=6){
-          const i=x*4;
-          const lum=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];
-          if(lum<200) return false; // tummaa sisältöä → ei tyhjä
-        }
-        return true;
-      }
-      // Onko y:stä alkaen n peräkkäistä tyhjää riviä?
-      function tyhjaVali(y,n){
-        for(let yy=y; yy<y+n; yy++){ if(!riviTyhja(yy)) return false; }
-        return true;
-      }
+      // Leikataan vain lohkojen väliltä: valitaan viimeisin raja joka vielä
+      // mahtuu sivulle. Näin taulukko/korttiryhmä ei halkea eikä otsikko jää
+      // yksin sivun loppuun (otsikko on itsekin lohko, joten se aloittaa sivun).
       function etsiLeikkaus(alku){
         const ihanne=alku+sivuPx;
         if(ihanne>=canvas.height) return canvas.height; // viimeinen pala
-        // Älä tee liian tyhjää sivua: leikkaus vähintään 30 % sivusta alaspäin
-        const minLeikkaus=alku+Math.floor(sivuPx*0.30);
-
-        // 1) OTSIKKOSÄÄNTÖ (mitattu, luotettava)
-        //    Jos otsikko alkaa sivun loppuvyöhykkeellä TAI juuri leikkauskohdassa,
-        //    leikataan sen yläpuolelta → otsikko ei jää yksin sivun loppuun.
-        const vyohyke=Math.floor(sivuPx*0.20);
-        let ehdokas=-1;
-        for(const oy of otsikkoYt){
-          if(oy>=ihanne-vyohyke && oy<=ihanne+otsikkoMarginaali){
-            const leikkaus=oy-otsikkoMarginaali;
-            if(leikkaus>minLeikkaus && leikkaus>ehdokas) ehdokas=leikkaus;
-          }
+        let paras=null;
+        for(const r of rajat){
+          if(r.y>alku && r.y<=ihanne && (paras===null || r.y>paras.y)) paras=r;
         }
-        if(ehdokas>0) return Math.floor(ehdokas);
-
-        // 2) Iso tyhjä väli (osioiden raja)
-        const vali=Math.max(6,Math.floor(sivuPx*0.012));
-        for(let y=ihanne; y>minLeikkaus; y--){
-          if(tyhjaVali(y-vali,vali)) return y;
+        if(paras){
+          // Jos seuraava lohko ei mahdu kokonaiselle sivulle, sen siirtäminen
+          // ei auta (se katkeaa silti) → täytetään mieluummin nykyinen sivu.
+          const kork=paras.seuraava.ala-paras.seuraava.yla;
+          if(kork>sivuPx) return ihanne;
+          return Math.floor(paras.y);
         }
-        // 3) Pieni rako, ettei katkea keskeltä tekstiriviä
-        for(let y=ihanne; y>minLeikkaus; y--){
-          if(riviTyhja(y)&&riviTyhja(y-2)&&riviTyhja(y+2)) return y;
-        }
-        return ihanne; // ei löytynyt → leikkaa ihanteesta
+        return ihanne; // ei rajaa → lohko on sivua korkeampi, leikataan ihanteesta
       }
       const doc=new JsPDF({unit:"mm",format:"a4"});
 
