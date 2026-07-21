@@ -833,7 +833,7 @@ function RaporttiText({text}){
       viimeisinOtsikko=sisalto; // seuraa otsikkoa (jotta tiedämme onko Kuukausikulut-osio)
       const koko=h1?24:h2?20:17;
       elementit.push(
-        <div key={idx} style={{fontFamily:H,fontSize:koko,fontStyle:"italic",color:C.ink,margin:"20px 0 8px",lineHeight:1.25}}>{renderInline(sisalto)}</div>
+        <div key={idx} data-otsikko="1" style={{fontFamily:H,fontSize:koko,fontStyle:"italic",color:C.ink,margin:"20px 0 8px",lineHeight:1.25}}>{renderInline(sisalto)}</div>
       );
     } else if(bullet){
       lista.push(bullet[1]);
@@ -940,83 +940,79 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
 
       const c_dark=[42,31,20], c_gold=[201,168,76], c_cream=[251,243,226], c_stone=[110,100,88];
 
+      // ── OTSIKOIDEN TODELLISET SIJAINNIT ──────────────────────────────
+      // Pikseleistä arvaaminen ei ole luotettavaa (raportissa on värillisiä
+      // laatikoita, reunaviivoja ja taulukoita). Mitataan sen sijaan suoraan
+      // DOM:ista, missä kukin otsikko alkaa, ja muunnetaan canvas-pikseleiksi.
+      const skaala=canvas.height/(elementti.offsetHeight||1);
+      const elTop=elementti.getBoundingClientRect().top;
+      const otsikkoYt=Array.from(elementti.querySelectorAll("[data-otsikko]"))
+        .map(h=>(h.getBoundingClientRect().top-elTop)*skaala)
+        .filter(y=>y>0&&y<canvas.height)
+        .sort((a,b)=>a-b);
+      // Otsikon yläpuolinen tyhjä tila on 20px (CSS) → leikataan sen sisään
+      const otsikkoMarginaali=Math.round(10*skaala);
+
       // Skaala: montako canvas-pikseliä vastaa yhtä mm:ä (kuvan leveys → kuvaLeveys mm)
       const pxPerMm=canvas.width/kuvaLeveys;
       // Montako canvas-pikseliä mahtuu yhdelle sivulle (korkeussuunnassa)
       const sivuPx=Math.floor(sisaltoKorkeus*pxPerMm);
 
       // ── ÄLYKÄS LEIKKAUS ──────────────────────────────────────────────
-      // Ongelma: jos sivu leikataan sokeasti tasavälein, katkos osuu usein
-      // keskelle tekstiä/otsikkoa/väripalkkia ja näyttää rikkinäiseltä.
-      // Ratkaisu: etsi leikkauskohdan lähistöltä (ylöspäin) "tyhjä" vaakarivi
-      // — rivi jossa lähes kaikki pikselit ovat paperinväriä (osioiden väli) —
-      // ja leikkaa siitä. Näin yksikään lohko ei katkea kahtia.
+      // Ensisijainen sääntö: käytä DOM:ista mitattuja otsikkosijainteja.
+      // Jos otsikko alkaisi aivan sivun loppuun, leikataan sen yläpuolelta,
+      // jolloin otsikko siirtyy seuraavalle sivulle sisältönsä kanssa.
+      // Varalla pikselipohjainen tyhjän rivin haku (kirkkauteen perustuva).
       const ctxFull=canvas.getContext("2d");
-      // Paperin sävy on ~#FBF8F3 (251,248,243). "Tyhjä" = lähellä tätä.
+      // "Tyhjä rivi" = rivillä ei ole tummia pikseleitä (tekstiä/grafiikkaa).
+      // HUOM: ei verrata paperin sävyyn, koska raportissa on kortteja,
+      // reunaviivoja ja taulukoita joiden taustat poikkeavat paperista.
       function riviTyhja(y){
         if(y<0||y>=canvas.height) return false;
         let data;
         try{ data=ctxFull.getImageData(0,y,canvas.width,1).data; }catch(e){ return false; }
-        // Näytteistä joka 6. pikseli nopeuden vuoksi
         for(let x=0;x<canvas.width;x+=6){
-          const i=x*4, r=data[i], g=data[i+1], b=data[i+2];
-          // Jos pikseli poikkeaa selvästi paperin sävystä → rivi ei ole tyhjä
-          if(Math.abs(r-251)>12||Math.abs(g-248)>12||Math.abs(b-243)>12) return false;
+          const i=x*4;
+          const lum=0.299*data[i]+0.587*data[i+1]+0.114*data[i+2];
+          if(lum<200) return false; // tummaa sisältöä → ei tyhjä
         }
         return true;
       }
-      // Onko kohdassa y "tekstiä" (ei-tyhjä rivi)? Apuri otsikon tunnistukseen.
-      function riviTekstia(y){
-        return !riviTyhja(y);
-      }
-      // Onko kohdassa y "iso tyhjä väli" — vähintään minVali peräkkäistä
-      // tyhjää riviä? Iso väli = osioiden raja (otsikon yläpuolinen tila).
-      function isoTyhjaVali(y,minVali){
-        for(let yy=y; yy<y+minVali; yy++){
-          if(!riviTyhja(yy)) return false;
-        }
+      // Onko y:stä alkaen n peräkkäistä tyhjää riviä?
+      function tyhjaVali(y,n){
+        for(let yy=y; yy<y+n; yy++){ if(!riviTyhja(yy)) return false; }
         return true;
-      }
-      // Löytyykö kohdasta y alaspäin (enintään katso px) iso tyhjä väli, jota
-      // SEURAA tekstiä (= otsikko alkamassa)? Palauttaa välin yläreunan y-arvon
-      // (johon kannattaa leikata, jotta otsikko siirtyy seuraavalle sivulle),
-      // tai -1 jos ei löydy.
-      function etsiOtsikkoraja(ylaY,alaY,minVali){
-        for(let y=ylaY; y<alaY; y++){
-          if(isoTyhjaVali(y,minVali)){
-            // väli alkaa y:stä; tuleeko välin jälkeen tekstiä (otsikko)?
-            const valinLoppu=y+minVali;
-            if(valinLoppu<canvas.height && riviTekstia(valinLoppu+1)){
-              return y; // leikkaa välin yläreunasta → otsikko menee seuraavalle sivulle
-            }
-          }
-        }
-        return -1;
       }
       function etsiLeikkaus(alku){
         const ihanne=alku+sivuPx;
         if(ihanne>=canvas.height) return canvas.height; // viimeinen pala
-        const maxHaku=Math.floor(sivuPx*0.30); // saa perääntyä ylöspäin
-        const minVali=Math.max(8,Math.floor(sivuPx*0.020));
+        // Älä tee liian tyhjää sivua: leikkaus vähintään 30 % sivusta alaspäin
+        const minLeikkaus=alku+Math.floor(sivuPx*0.30);
 
-        // 1) ORPO-OTSIKON ESTO: katso onko aivan sivun alaosassa (viim. ~12 %)
-        //    iso tyhjä väli jota seuraa tekstiä = otsikko alkamassa lähellä reunaa.
-        //    Jos on, leikkaa sen yläpuolelta → otsikko ei jää yksin sivun loppuun.
-        const orpoVyohyke=Math.floor(sivuPx*0.12);
-        const orpo=etsiOtsikkoraja(ihanne-orpoVyohyke, ihanne, minVali);
-        if(orpo!==-1) return orpo;
-
-        // 2) Muuten: etsi iso tyhjä väli (osioraja) ja leikkaa sen alareunasta.
-        for(let y=ihanne;y>ihanne-maxHaku;y--){
-          if(isoTyhjaVali(y-minVali,minVali)) return y;
+        // 1) OTSIKKOSÄÄNTÖ (mitattu, luotettava)
+        //    Jos otsikko alkaa sivun loppuvyöhykkeellä TAI juuri leikkauskohdassa,
+        //    leikataan sen yläpuolelta → otsikko ei jää yksin sivun loppuun.
+        const vyohyke=Math.floor(sivuPx*0.20);
+        let ehdokas=-1;
+        for(const oy of otsikkoYt){
+          if(oy>=ihanne-vyohyke && oy<=ihanne+otsikkoMarginaali){
+            const leikkaus=oy-otsikkoMarginaali;
+            if(leikkaus>minLeikkaus && leikkaus>ehdokas) ehdokas=leikkaus;
+          }
         }
-        // 3) Vara: pienempi tyhjä rako, ettei katkea keskeltä tekstiä.
-        for(let y=ihanne;y>ihanne-maxHaku;y--){
+        if(ehdokas>0) return Math.floor(ehdokas);
+
+        // 2) Iso tyhjä väli (osioiden raja)
+        const vali=Math.max(6,Math.floor(sivuPx*0.012));
+        for(let y=ihanne; y>minLeikkaus; y--){
+          if(tyhjaVali(y-vali,vali)) return y;
+        }
+        // 3) Pieni rako, ettei katkea keskeltä tekstiriviä
+        for(let y=ihanne; y>minLeikkaus; y--){
           if(riviTyhja(y)&&riviTyhja(y-2)&&riviTyhja(y+2)) return y;
         }
         return ihanne; // ei löytynyt → leikkaa ihanteesta
       }
-
       const doc=new JsPDF({unit:"mm",format:"a4"});
 
       function ylapalkki(){
