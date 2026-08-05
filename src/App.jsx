@@ -1063,6 +1063,10 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
       files.forEach(f=>fd.append("tiedostot",f));
       fd.append("kieli",lang); // välitä kieli backendille (analyysin kieli)
       fd.append("nakokulma",nakokulma); // ostaja tai myyja → eri raporttinäkökulma
+      // Kehittäjä-avain: jos preview-tilassa (avain sessionStoragessa), lähetä se
+      // niin backend-lukko päästää analyysin läpi ennen julkaisua. Tavallisella
+      // kävijällä tätä ei ole → backend estää (ei API-kuluja).
+      try{ const dev=sessionStorage.getItem("devAvain"); if(dev) fd.append("devAvain",dev); }catch(e){}
       // HUOM: ei aseteta Content-Type-otsikkoa — selain lisää sen automaattisesti.
       const res=await fetch(`${BACKEND_URL}/api/analyysi`,{method:"POST",body:fd});
 
@@ -1464,7 +1468,12 @@ export default function App(){
     if(typeof window==="undefined") return false;
     if(new Date()>=new Date("2026-08-25T00:00:00+03:00")) return false; // julkaistu
     try{
-      const avain=new URLSearchParams(window.location.search).get("preview");
+      const params=new URLSearchParams(window.location.search);
+      const avain=params.get("preview");
+      // Kehittäjä-avain (backend-lukon ohitus). Tulee URL:sta, tallennetaan
+      // sessionStorageen — EI koodissa (pysyy salaisena). Lähetetään analyysissä.
+      const dev=params.get("dev");
+      if(dev){ try{ sessionStorage.setItem("devAvain",dev); }catch(e){} }
       if(avain==="esikatselu-2026"){ sessionStorage.setItem("previewOk","1"); return false; }
       if(sessionStorage.getItem("previewOk")==="1") return false;
     }catch(e){/* sessionStorage estetty → pysytään lukossa */}
