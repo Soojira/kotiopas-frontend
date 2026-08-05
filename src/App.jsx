@@ -1603,7 +1603,6 @@ export default function App(){
       <div style={{background:"#2A1F14",minHeight:"100vh",fontFamily:B}}>
         <style>{GLOBAL}</style>
         <div style={{position:"relative",overflow:"hidden",background:"linear-gradient(165deg,#2A1F14 0%,#3E2D1A 40%,#1E3020 100%)",padding:"calc(52px + env(safe-area-inset-top)) 28px calc(60px + env(safe-area-inset-bottom))",minHeight:"100vh",minHeight:"100dvh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"}}>
-          <div style={{position:"absolute",top:-80,right:-80,width:300,height:300,borderRadius:"50%",border:"1px solid rgba(201,168,76,0.1)",pointerEvents:"none"}}/>
           <div style={{position:"absolute",bottom:-80,left:-80,width:240,height:240,borderRadius:"50%",border:"1px solid rgba(201,168,76,0.07)",pointerEvents:"none"}}/>
           <div style={{position:"absolute",top:"calc(20px + env(safe-area-inset-top))",right:24}}><LangToggle dark/></div>
           <div style={{width:"100%",maxWidth:isDesktop?620:420,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center"}}>
@@ -1690,7 +1689,6 @@ export default function App(){
       <div aria-hidden="true" style={{position:"fixed",bottom:0,left:0,right:0,height:"env(safe-area-inset-bottom)",background:C.paper,zIndex:1000,pointerEvents:"none"}}/>
 
       <div style={{position:"relative",overflow:"hidden",background:"linear-gradient(165deg,#2A1F14 0%,#3E2D1A 40%,#1E3020 100%)",padding:"calc(36px + env(safe-area-inset-top)) 24px 44px"}}>
-        <div style={{position:"absolute",top:-60,right:-60,width:220,height:220,borderRadius:"50%",border:"1px solid rgba(201,168,76,0.1)",pointerEvents:"none"}}/>
         <div style={{maxWidth:1080,margin:"0 auto",width:"100%"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
           <button onClick={()=>setMode(null)} style={{background:"rgba(255,255,255,0.08)",border:"none",color:"rgba(251,243,226,0.5)",fontFamily:B,fontSize:11,letterSpacing:1,padding:"6px 14px",borderRadius:20,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>
