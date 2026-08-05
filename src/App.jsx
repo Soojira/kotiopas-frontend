@@ -891,8 +891,9 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
       }catch(e){
         setError(t(lang,"Maksun varmistus ei onnistunut.","Payment verification failed."));
       }
-      // Siivoa maksu-parametrit URL:sta (ettei varmistus toistu päivityksellä)
-      try{ window.history.replaceState(null,"",window.location.pathname); }catch(e){}
+      // Siivoa maksu-parametrit URL:sta (ettei varmistus toistu päivityksellä).
+      // Säilytä hash (#ostaja/taloyhtion), jotta pysytään analyysivälilehdellä.
+      try{ window.history.replaceState(null,"",window.location.pathname+window.location.hash); }catch(e){}
     })();
   },[]);
 
@@ -1199,6 +1200,10 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
         </div>
       </div>
 
+      {/* Latausalue ja ohjeet näkyvät vasta maksun jälkeen (tai dev-tilassa).
+          Näin asiakas ei lataa papereita ennen maksua (ne katoaisivat maksun
+          aikana kun poistutaan Paytrailiin). */}
+      {(maksuToken||onDev)&&(<>
       {/* Vinkki: tärkeimmät paperit → nopeampi ja terävämpi analyysi */}
       <div style={{background:C.goldDim,border:`1px solid ${C.gold}40`,borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",gap:8,alignItems:"flex-start"}}>
         <span style={{fontSize:13,flexShrink:0,marginTop:1}}>💡</span>
@@ -1243,6 +1248,7 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
           ))}
         </div>
       )}
+      </>)}
 
       {error&&<div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,padding:"12px 16px",color:"#B91C1C",fontFamily:B,fontSize:13,marginBottom:16}}>⚠ {error}<div style={{marginTop:8,fontSize:12,color:"#9B6B6B"}}>{t(lang,"Jos ongelma jatkuu, ota yhteyttä: ","If the problem persists, contact us: ")}<a href="mailto:info@asuntoraportti.fi" style={{color:"#B91C1C",textDecoration:"underline"}}>info@asuntoraportti.fi</a></div></div>}
 
