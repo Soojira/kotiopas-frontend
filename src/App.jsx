@@ -1340,19 +1340,19 @@ function TulossaNakyma({lang}){
     return ()=>{ kaynnissa=false; if(raf) cancelAnimationFrame(raf); window.removeEventListener("resize",koko); };
   },[]);
 
-  // Lähtölaskenta. Päivittyy minuutin välein. Siivotaan intervalli poistuessa.
+  // Lähtölaskenta — vain päivinä (rauhallinen, ei tikittäviä minuutteja).
+  // Päivittyy tunnin välein (riittää päivätarkkuudelle).
   useEffect(()=>{
     const target=new Date("2026-08-25T00:00:00+03:00");
     const paivita=()=>{
       const d=target-new Date();
       if(d<=0){ setJaljella(t(lang,"Julkaistu","Live now")); return; }
-      const days=Math.floor(d/8.64e7), h=Math.floor(d%8.64e7/3.6e6), m=Math.floor(d%3.6e6/6e4);
-      setJaljella(t(lang,
-        `— ${days} päivää ${h} h ${m} min julkaisuun`,
-        `— ${days} days ${h} h ${m} min to launch`));
+      const days=Math.ceil(d/8.64e7); // pyöristä ylös → "1 päivä" näkyy viimeiseen asti
+      if(days<=1){ setJaljella(t(lang,"— julkaisuun enää tunteja","— hours to launch")); return; }
+      setJaljella(t(lang, `— ${days} päivää julkaisuun`, `— ${days} days to launch`));
     };
     paivita();
-    const id=setInterval(paivita,60000);
+    const id=setInterval(paivita,3600000); // kerran tunnissa
     return ()=>clearInterval(id);
   },[lang]);
 
