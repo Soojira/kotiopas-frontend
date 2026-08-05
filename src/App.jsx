@@ -864,6 +864,54 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
   const [loadStep,setLoadStep]=useState(0);
   const [dragging,setDragging]=useState(false);
   const [pdfLataa,setPdfLataa]=useState(false);
+  // Maksu: maksuToken = varmistettu maksu (oikeuttaa yhteen analyysiin).
+  // maksamassa = ostonapin lataustila. Dev-tilassa maksua ei tarvita.
+  const [maksuToken,setMaksuToken]=useState(null);
+  const [maksamassa,setMaksamassa]=useState(false);
+  const onDev=(()=>{ try{ return !!sessionStorage.getItem("devAvain"); }catch(e){ return false; } })();
+
+  // Paluun käsittely: kun asiakas palaa Paytrailista (?maksu=ok), varmistetaan
+  // maksu backendilta (joka tarkistaa allekirjoituksen + kysyy Paytraililta).
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    const params=new URLSearchParams(window.location.search);
+    if(params.get("maksu")!=="ok") return;
+    // Lähetä KAIKKI Paytrailin palauttamat parametrit backendille varmistettavaksi.
+    const qs=window.location.search; // sisältää checkout-* + signature
+    (async()=>{
+      try{
+        const r=await fetch(`${BACKEND_URL}/api/maksu/tila${qs}`);
+        const d=await r.json();
+        if(d.ok && d.maksettu && d.maksuToken){
+          setMaksuToken(d.maksuToken);
+          setError(null);
+        } else {
+          setError(t(lang,"Maksun varmistus ei onnistunut. Jos sinulta veloitettiin, ota yhteyttä.","Payment verification failed. If you were charged, please contact us."));
+        }
+      }catch(e){
+        setError(t(lang,"Maksun varmistus ei onnistunut.","Payment verification failed."));
+      }
+      // Siivoa maksu-parametrit URL:sta (ettei varmistus toistu päivityksellä)
+      try{ window.history.replaceState(null,"",window.location.pathname); }catch(e){}
+    })();
+  },[]);
+
+  // Osta analyysi: luo maksu backendilla → ohjaa Paytrailin maksusivulle.
+  async function ostaAnalyysi(){
+    setError(null); setMaksamassa(true);
+    try{
+      const r=await fetch(`${BACKEND_URL}/api/maksu/luo`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({kieli:lang}),
+      });
+      const d=await r.json();
+      if(d.ok && d.href){ window.location.href=d.href; } // → Paytrailin maksusivu
+      else setError(t(lang,"Maksun aloitus ei onnistunut. Yritä uudelleen.","Could not start payment. Please try again."));
+    }catch(e){
+      setError(t(lang,"Maksun aloitus ei onnistunut.","Could not start payment."));
+    }finally{ setMaksamassa(false); }
+  }
 
   const fmtKoko=b=>b>=1048576?`${(b/1048576).toFixed(1)} MB`:`${Math.round(b/1024)} kB`;
 
@@ -1067,6 +1115,8 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
       // niin backend-lukko päästää analyysin läpi ennen julkaisua. Tavallisella
       // kävijällä tätä ei ole → backend estää (ei API-kuluja).
       try{ const dev=sessionStorage.getItem("devAvain"); if(dev) fd.append("devAvain",dev); }catch(e){}
+      // Maksu: lähetä varmistettu maksuToken (backend vaatii sen, paitsi dev-tilassa).
+      if(maksuToken) fd.append("maksuToken",maksuToken);
       // HUOM: ei aseteta Content-Type-otsikkoa — selain lisää sen automaattisesti.
       const res=await fetch(`${BACKEND_URL}/api/analyysi`,{method:"POST",body:fd});
 
@@ -1207,9 +1257,21 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
         </div>
       )}
 
-      <DarkBtn onClick={analysoi} style={{marginBottom:analyysi?28:0,opacity:loading?0.6:1,cursor:loading?"wait":"pointer"}} disabled={loading}>
-        {loading?t(lang,"⏳ Analysoidaan...","⏳ Analysing..."):t(lang,"Analysoi →","Analyse →")}
-      </DarkBtn>
+      {/* Maksuportti: jos maksettu (tai dev-tila) → Analysoi. Muuten → Osta. */}
+      {(maksuToken||onDev)?(
+        <DarkBtn onClick={analysoi} style={{marginBottom:analyysi?28:0,opacity:loading?0.6:1,cursor:loading?"wait":"pointer"}} disabled={loading}>
+          {loading?t(lang,"⏳ Analysoidaan...","⏳ Analysing..."):t(lang,"Analysoi →","Analyse →")}
+        </DarkBtn>
+      ):(
+        <>
+          <DarkBtn onClick={ostaAnalyysi} style={{opacity:maksamassa?0.6:1,cursor:maksamassa?"wait":"pointer"}} disabled={maksamassa}>
+            {maksamassa?t(lang,"⏳ Siirrytään maksuun...","⏳ Redirecting to payment..."):t(lang,"Osta analyysi 29,90 € →","Buy analysis €29.90 →")}
+          </DarkBtn>
+          <div style={{fontFamily:B,fontSize:12,color:C.stone,textAlign:"center",marginTop:10,lineHeight:1.5}}>
+            {t(lang,"Maksun jälkeen saat analyysin heti. Kortti, verkkopankki tai MobilePay.","After payment you get the analysis immediately. Card, online bank or MobilePay.")}
+          </div>
+        </>
+      )}
 
       {/* Latausanimaatio — vain ennen kuin teksti alkaa virrata */}
       {loading&&!analyysi&&(
