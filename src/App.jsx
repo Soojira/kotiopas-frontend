@@ -883,6 +883,22 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
     }catch(e){}
   },[]);
 
+  // Maksutapojen logot: haetaan Paytraililta (näytetään osta-napin alla).
+  // Haetaan vain jos ostonäkymä on relevantti (ei maksettu, ei dev).
+  const [maksutavat,setMaksutavat]=useState([]);
+  useEffect(()=>{
+    if(maksuToken||onDev) return; // ei tarvita jos jo maksettu/dev
+    let peruttu=false;
+    (async()=>{
+      try{
+        const r=await fetch(`${BACKEND_URL}/api/maksu/tavat`);
+        const d=await r.json();
+        if(!peruttu && d.ok && Array.isArray(d.tavat)) setMaksutavat(d.tavat);
+      }catch(e){/* logot ovat kiva lisä — jos haku ei onnistu, jatketaan ilman */}
+    })();
+    return ()=>{ peruttu=true; };
+  },[maksuToken,onDev]);
+
   // Osta analyysi: luo maksu backendilla → ohjaa Paytrailin maksusivulle.
   async function ostaAnalyysi(){
     setError(null); setMaksamassa(true);
@@ -1267,8 +1283,22 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
             {maksamassa?t(lang,"⏳ Siirrytään maksuun...","⏳ Redirecting to payment..."):t(lang,"Osta analyysi 29,90 € →","Buy analysis €29.90 →")}
           </DarkBtn>
           <div style={{fontFamily:B,fontSize:12,color:C.stone,textAlign:"center",marginTop:10,lineHeight:1.5}}>
-            {t(lang,"Maksun jälkeen saat analyysin heti. Kortti, verkkopankki tai MobilePay.","After payment you get the analysis immediately. Card, online bank or MobilePay.")}
+            {t(lang,"Maksun jälkeen saat analyysin heti.","After payment you get the analysis immediately.")}
           </div>
+          {/* Maksutapojen logot (haettu Paytraililta). Jos haku ei tuottanut
+              logoja, näytetään varmuuden vuoksi lyhyt tekstivaihtoehto. */}
+          {maksutavat.length>0?(
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",alignItems:"center",marginTop:12}}>
+              {maksutavat.map((m,i)=>(
+                <img key={(m.id||"")+i} src={m.icon} alt={m.name||""} title={m.name||""}
+                  style={{height:26,width:"auto",maxWidth:60,objectFit:"contain",background:"#fff",borderRadius:4,padding:"3px 5px",border:`1px solid ${C.border}`}}/>
+              ))}
+            </div>
+          ):(
+            <div style={{fontFamily:B,fontSize:11,color:C.linen,textAlign:"center",marginTop:8}}>
+              {t(lang,"Kortti · verkkopankki · MobilePay","Card · online bank · MobilePay")}
+            </div>
+          )}
         </>
       )}
 
