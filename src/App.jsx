@@ -1283,7 +1283,7 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
             {maksamassa?t(lang,"⏳ Siirrytään maksuun...","⏳ Redirecting to payment..."):t(lang,"Osta analyysi 29,90 € →","Buy analysis €29.90 →")}
           </DarkBtn>
           <div style={{fontFamily:B,fontSize:12,color:C.stone,textAlign:"center",marginTop:10,lineHeight:1.5}}>
-            {t(lang,"Maksun jälkeen saat analyysin heti.","After payment you get the analysis immediately.")}
+            {t(lang,"Maksun jälkeen pääset lataamaan paperit ja tekemään analyysin.","After payment you can upload the documents and run the analysis.")}
           </div>
           {/* Maksutapojen logot (haettu Paytraililta). Jos haku ei tuottanut
               logoja, näytetään varmuuden vuoksi lyhyt tekstivaihtoehto. */}
