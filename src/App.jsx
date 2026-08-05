@@ -1303,6 +1303,97 @@ function lueHash(){
   return {mode:moded,tab:t};
 }
 
+// ── "Tulossa 25.8" -näkymä (coming soon) ─────────────────────────────────
+// Editorial-tyyli: iso serif-typografia vasemmalla, hienovarainen elävä tausta
+// (liikkuvat lämpimät valonhäiveet), lähtölaskenta tekstinä, FI/EN-kielenvaihto.
+function TulossaNakyma({lang}){
+  const canvasRef=useRef(null);
+  const [jaljella,setJaljella]=useState("");
+
+  // Elävä tausta (canvas). Siivotaan animaatio kun komponentti poistuu.
+  useEffect(()=>{
+    const cv=canvasRef.current; if(!cv) return;
+    const ctx=cv.getContext("2d");
+    let raf=null, t=0, kaynnissa=true;
+    const koko=()=>{ cv.width=cv.offsetWidth; cv.height=cv.offsetHeight; };
+    koko(); window.addEventListener("resize",koko);
+    const blobs=[
+      {x:0.20,y:0.35,r:230,c:"rgba(120,80,30,0.55)",dx:0.00007,dy:0.00005,px:0,py:0},
+      {x:0.75,y:0.28,r:200,c:"rgba(70,90,50,0.45)",dx:-0.00006,dy:0.00008,px:0.4,py:0.3},
+      {x:0.55,y:0.70,r:260,c:"rgba(150,110,45,0.35)",dx:0.00005,dy:-0.00006,px:0.8,py:0.6},
+    ];
+    const piirra=()=>{
+      if(!kaynnissa) return;
+      t++;
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.fillStyle="#241a10"; ctx.fillRect(0,0,cv.width,cv.height);
+      blobs.forEach(b=>{
+        const x=(b.x+Math.sin(t*b.dx*1000+b.px)*0.06)*cv.width;
+        const y=(b.y+Math.cos(t*b.dy*1000+b.py)*0.06)*cv.height;
+        const g=ctx.createRadialGradient(x,y,0,x,y,b.r);
+        g.addColorStop(0,b.c); g.addColorStop(1,"rgba(36,26,16,0)");
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,b.r,0,7); ctx.fill();
+      });
+      raf=requestAnimationFrame(piirra);
+    };
+    piirra();
+    return ()=>{ kaynnissa=false; if(raf) cancelAnimationFrame(raf); window.removeEventListener("resize",koko); };
+  },[]);
+
+  // Lähtölaskenta. Päivittyy minuutin välein. Siivotaan intervalli poistuessa.
+  useEffect(()=>{
+    const target=new Date("2026-08-25T00:00:00+03:00");
+    const paivita=()=>{
+      const d=target-new Date();
+      if(d<=0){ setJaljella(t(lang,"Julkaistu","Live now")); return; }
+      const days=Math.floor(d/8.64e7), h=Math.floor(d%8.64e7/3.6e6), m=Math.floor(d%3.6e6/6e4);
+      setJaljella(t(lang,
+        `— ${days} päivää ${h} h ${m} min julkaisuun`,
+        `— ${days} days ${h} h ${m} min to launch`));
+    };
+    paivita();
+    const id=setInterval(paivita,60000);
+    return ()=>clearInterval(id);
+  },[lang]);
+
+  // Fade-in: tekstit häivähtävät esiin yksi kerrallaan (hidas, arvokas).
+  const [nakyvat,setNakyvat]=useState(false);
+  useEffect(()=>{ const id=setTimeout(()=>setNakyvat(true),100); return ()=>clearTimeout(id); },[]);
+  // Porrastettu tyyli: elementti i tulee esiin viiveellä 250 + i*750 ms.
+  const fade=(i)=>({
+    opacity:nakyvat?1:0,
+    transform:nakyvat?"translateY(0)":"translateY(14px)",
+    transition:`opacity 1400ms ease ${250+i*750}ms, transform 1400ms ease ${250+i*750}ms`,
+  });
+
+  return (
+    <div style={{position:"relative",minHeight:"100vh",minHeight:"100dvh",overflow:"hidden",background:"#241a10",fontFamily:B}}>
+      <canvas ref={canvasRef} style={{position:"absolute",inset:0,width:"100%",height:"100%"}}/>
+      <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,rgba(42,31,20,0.35) 0%,rgba(30,48,32,0.55) 100%)"}}/>
+      {/* Kielenvaihto: ylös oikealle */}
+      <div style={{position:"absolute",top:"calc(28px + env(safe-area-inset-top))",right:24,zIndex:3}}>
+        <LangToggle dark/>
+      </div>
+      {/* Sisältö: keskitetty pystyriviin */}
+      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"0 28px",zIndex:2}}>
+        <div style={{...fade(0),fontFamily:H,fontSize:"clamp(30px,7vw,38px)",fontStyle:"italic",color:C.gold,marginBottom:26}}>Asuntoraportti</div>
+        <div style={{...fade(1),fontSize:11,letterSpacing:4,textTransform:"uppercase",color:C.gold,marginBottom:20}}>
+          {t(lang,"Tulossa","Coming soon")}
+        </div>
+        <div style={{...fade(2),fontFamily:H,fontSize:"clamp(28px,6.5vw,46px)",lineHeight:1.15,color:C.paper,maxWidth:520,marginBottom:22}}>
+          {t(lang,
+            <>Taloyhtiön paperit luettuna puolestasi — <span style={{fontStyle:"italic",color:"#E8D9A8"}}>selkokielellä.</span></>,
+            <>Housing company documents read for you — <span style={{fontStyle:"italic",color:"#E8D9A8"}}>in plain language.</span></>)}
+        </div>
+        <div style={{...fade(3),display:"flex",alignItems:"baseline",gap:14,flexWrap:"wrap",justifyContent:"center"}}>
+          <div style={{fontFamily:H,fontSize:26,color:C.paper}}>25.08.2026</div>
+          <div style={{fontSize:13,letterSpacing:0.3,color:"rgba(251,243,226,0.6)"}}>{jaljella}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App(){
   const init=lueHash();
   const lang=useLang();
@@ -1359,6 +1450,27 @@ export default function App(){
     const root=document.getElementById("root");
     if(root) root.style.background = vari;
   },[mode]);
+
+  // ── "TULOSSA 25.8" -LUKITUS ──────────────────────────────────────────
+  // Sivu on lukossa yleisöltä julkaisuun asti. Avautuu automaattisesti
+  // julkaisupäivänä (Suomen aika), TAI heti jos osoitteessa on preview-avain:
+  //   asuntoraportti.fi/?preview=esikatselu-2026
+  // Avain muistetaan selaimessa (sessionStorage), joten sen voi antaa kerran.
+  // HUOM: tämä on visuaalinen esto kävijöille. Backend estää analyysin erikseen,
+  // joten pelkkä tämän ohitus ei riitä ajamaan analyysiä (ei API-kuluja).
+  // Sijoitettu KAIKKIEN hookkien jälkeen (React-sääntö: ei hookkeja ehdollisen
+  // aikaisen returnin jälkeen).
+  const onLukossa=(()=>{
+    if(typeof window==="undefined") return false;
+    if(new Date()>=new Date("2026-08-25T00:00:00+03:00")) return false; // julkaistu
+    try{
+      const avain=new URLSearchParams(window.location.search).get("preview");
+      if(avain==="esikatselu-2026"){ sessionStorage.setItem("previewOk","1"); return false; }
+      if(sessionStorage.getItem("previewOk")==="1") return false;
+    }catch(e){/* sessionStorage estetty → pysytään lukossa */}
+    return true;
+  })();
+  if(onLukossa) return <TulossaNakyma lang={lang} />;
 
   if(!mode){
     return(
