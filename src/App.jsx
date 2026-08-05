@@ -88,7 +88,6 @@ function fmt(n){return Math.round(n||0).toLocaleString("fi-FI");}
 function DarkCard({children,style={}}){
   return(
     <div style={{background:"linear-gradient(160deg,#2A1F14,#1E3020)",borderRadius:14,overflow:"hidden",position:"relative",...style}}>
-      <div style={{position:"absolute",top:-60,right:-60,width:200,height:200,borderRadius:"50%",border:"1px solid rgba(201,168,76,0.1)",pointerEvents:"none"}}/>
       {children}
     </div>
   );
