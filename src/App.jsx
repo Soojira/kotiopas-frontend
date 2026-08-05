@@ -866,35 +866,21 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
   const [pdfLataa,setPdfLataa]=useState(false);
   // Maksu: maksuToken = varmistettu maksu (oikeuttaa yhteen analyysiin).
   // maksamassa = ostonapin lataustila. Dev-tilassa maksua ei tarvita.
-  const [maksuToken,setMaksuToken]=useState(null);
+  const [maksuToken,setMaksuToken]=useState(()=>{ try{ return sessionStorage.getItem("maksuToken")||null; }catch(e){ return null; } });
   const [maksamassa,setMaksamassa]=useState(false);
   const onDev=(()=>{ try{ return !!sessionStorage.getItem("devAvain"); }catch(e){ return false; } })();
 
-  // Paluun käsittely: kun asiakas palaa Paytrailista (?maksu=ok), varmistetaan
-  // maksu backendilta (joka tarkistaa allekirjoituksen + kysyy Paytraililta).
+  // App-taso varmistaa maksun ja tallentaa tokenin/virheen sessionStorageen.
+  // Luetaan se tässä (kun analyysivälilehti avautuu maksun paluun jälkeen).
   useEffect(()=>{
-    if(typeof window==="undefined") return;
-    const params=new URLSearchParams(window.location.search);
-    if(params.get("maksu")!=="ok") return;
-    // Lähetä KAIKKI Paytrailin palauttamat parametrit backendille varmistettavaksi.
-    const qs=window.location.search; // sisältää checkout-* + signature
-    (async()=>{
-      try{
-        const r=await fetch(`${BACKEND_URL}/api/maksu/tila${qs}`);
-        const d=await r.json();
-        if(d.ok && d.maksettu && d.maksuToken){
-          setMaksuToken(d.maksuToken);
-          setError(null);
-        } else {
-          setError(t(lang,"Maksun varmistus ei onnistunut. Jos sinulta veloitettiin, ota yhteyttä.","Payment verification failed. If you were charged, please contact us."));
-        }
-      }catch(e){
-        setError(t(lang,"Maksun varmistus ei onnistunut.","Payment verification failed."));
+    try{
+      const tok=sessionStorage.getItem("maksuToken");
+      if(tok){ setMaksuToken(tok); }
+      if(sessionStorage.getItem("maksuVirhe")==="1"){
+        setError(t(lang,"Maksun varmistus ei onnistunut. Jos sinulta veloitettiin, ota yhteyttä.","Payment verification failed. If you were charged, please contact us."));
+        sessionStorage.removeItem("maksuVirhe");
       }
-      // Siivoa maksu-parametrit URL:sta (ettei varmistus toistu päivityksellä).
-      // Säilytä hash (#ostaja/taloyhtion), jotta pysytään analyysivälilehdellä.
-      try{ window.history.replaceState(null,"",window.location.pathname+window.location.hash); }catch(e){}
-    })();
+    }catch(e){}
   },[]);
 
   // Osta analyysi: luo maksu backendilla → ohjaa Paytrailin maksusivulle.
@@ -1473,6 +1459,33 @@ export default function App(){
   const [tab,setTab]=useState(init.tab||"opas");
   const isDesktop=useIsDesktop(900);
   const ekaAjo=useRef(true);
+
+  // ── MAKSUN PALUU (App-tasolla, ajaa aina) ────────────────────────────────
+  // Paytrail palauttaa /?maksu=ok&checkout-*... — käsitellään TÄÄLLÄ, koska
+  // analyysivälilehti ei renderöidy etusivulla. Varmistetaan maksu, tallennetaan
+  // token sessionStorageen (TabTaloyhtion lukee sen), ja ohjataan ostaja-välilehdelle.
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    const params=new URLSearchParams(window.location.search);
+    if(params.get("maksu")!=="ok") return;
+    const qs=window.location.search; // sisältää checkout-* + signature
+    (async()=>{
+      try{
+        const r=await fetch(`${BACKEND_URL}/api/maksu/tila${qs}`);
+        const d=await r.json();
+        if(d.ok && d.maksettu && d.maksuToken){
+          try{ sessionStorage.setItem("maksuToken",d.maksuToken); }catch(e){}
+        } else {
+          try{ sessionStorage.setItem("maksuVirhe","1"); }catch(e){}
+        }
+      }catch(e){
+        try{ sessionStorage.setItem("maksuVirhe","1"); }catch(e){}
+      }
+      // Siivoa query-parametrit ja ohjaa ostaja-välilehdelle (analyysiin).
+      try{ window.history.replaceState(null,"",window.location.pathname); }catch(e){}
+      setMode("ostaja"); setTab("taloyhtion");
+    })();
+  },[]);
 
   // Päivitä URL-hash kun mode/tab muuttuu (jotta selaimen historia tallentaa tilan)
   useEffect(()=>{
