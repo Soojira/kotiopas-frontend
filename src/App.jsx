@@ -1147,6 +1147,13 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
       if(!kerätty.trim()){
         throw new Error(t(lang,"Analyysi jäi tyhjäksi. Yritä uudelleen.","The analysis came back empty. Please try again."));
       }
+      // Analyysi valmistui onnistuneesti → kuluta maksu (yksi maksu = yksi analyysi).
+      // Ei koske dev-tilaa. Jos analyysi epäonnistui (catch), tokenia EI kuluteta,
+      // joten asiakas voi yrittää uudelleen samalla maksulla.
+      if(!onDev){
+        try{ sessionStorage.removeItem("maksuToken"); }catch(e){}
+        setMaksuToken(null);
+      }
     }catch(e){
       console.error("Analyysi-virhe:",e);
       setError(e.message||t(lang,"Yhteysvirhe. Tarkista verkkoyhteys ja yritä uudelleen.","Connection error. Check your network and try again."));
