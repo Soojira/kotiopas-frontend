@@ -1437,7 +1437,7 @@ function TulossaNakyma({lang}){
   // Lähtölaskenta — vain päivinä (rauhallinen, ei tikittäviä minuutteja).
   // Päivittyy tunnin välein (riittää päivätarkkuudelle).
   useEffect(()=>{
-    const target=new Date("2026-08-25T00:00:00+03:00");
+    const target=new Date("2026-08-25T09:00:00+03:00");
     const paivita=()=>{
       const d=target-new Date();
       if(d<=0){ setJaljella(t(lang,"Julkaistu","Live now")); return; }
@@ -1583,7 +1583,7 @@ export default function App(){
   // aikaisen returnin jälkeen).
   const onLukossa=(()=>{
     if(typeof window==="undefined") return false;
-    if(new Date()>=new Date("2026-08-25T00:00:00+03:00")) return false; // julkaistu
+    if(new Date()>=new Date("2026-08-25T09:00:00+03:00")) return false; // julkaistu
     try{
       const params=new URLSearchParams(window.location.search);
       const avain=params.get("preview");
