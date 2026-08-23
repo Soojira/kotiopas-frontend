@@ -138,7 +138,7 @@ function Ikoni({nimi,size=16,color="currentColor",style={}}){
 function Pill({children,active,onClick}){
   return(
     <button onClick={onClick} style={{
-      background:active?"linear-gradient(135deg,#2A1F14,#1E3020)":"transparent",
+      background:active?"linear-gradient(135deg,#5C4326,#3E2D1A)":"transparent",
       color:active?C.gold:C.stone,
       border:`1px solid ${active?"rgba(201,168,76,0.4)":C.border}`,
       borderRadius:20,padding:"8px 18px",
@@ -177,9 +177,9 @@ function FloatSelect({label,value,onChange,children}){
 function DarkBtn({children,onClick,style={}}){
   return(
     <button onClick={onClick}
-      style={{background:"linear-gradient(135deg,#2A1F14,#1E3020)",color:C.gold,border:"none",padding:"17px 0",fontFamily:H,fontSize:18,fontStyle:"italic",cursor:"pointer",borderRadius:12,boxShadow:"0 8px 32px rgba(42,31,20,0.2)",width:"100%",transition:"transform 0.15s,box-shadow 0.15s",...style}}
-      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 40px rgba(42,31,20,0.3)"}}
-      onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 8px 32px rgba(42,31,20,0.2)"}}>
+      style={{background:"linear-gradient(135deg,#5C4326,#3E2D1A)",color:C.gold,border:"none",padding:"17px 0",fontFamily:H,fontSize:18,fontStyle:"italic",cursor:"pointer",borderRadius:12,boxShadow:"0 8px 32px rgba(60,45,26,0.25)",width:"100%",transition:"transform 0.15s,box-shadow 0.15s",...style}}
+      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 40px rgba(60,45,26,0.35)"}}
+      onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 8px 32px rgba(60,45,26,0.25)"}}>
       {children}
     </button>
   );
