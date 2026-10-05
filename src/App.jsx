@@ -867,6 +867,8 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
   // maksamassa = ostonapin lataustila. Dev-tilassa maksua ei tarvita.
   const [maksuToken,setMaksuToken]=useState(()=>{ try{ return sessionStorage.getItem("maksuToken")||null; }catch(e){ return null; } });
   const [maksamassa,setMaksamassa]=useState(false);
+  // Sähköposti kuittia varten — Paytrail lähettää maksukuitin tähän osoitteeseen.
+  const [maksuEmail,setMaksuEmail]=useState("");
   const onDev=(()=>{ try{ return !!sessionStorage.getItem("devAvain"); }catch(e){ return false; } })();
 
   // App-taso varmistaa maksun ja tallentaa tokenin/virheen sessionStorageen.
@@ -900,12 +902,18 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
 
   // Osta analyysi: luo maksu backendilla → ohjaa Paytrailin maksusivulle.
   async function ostaAnalyysi(){
+    // Sähköposti on pakollinen — Paytrail lähettää kuitin tähän osoitteeseen.
+    const email=maksuEmail.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      setError(t(lang,"Anna kelvollinen sähköpostiosoite kuittia varten.","Please enter a valid email address for the receipt."));
+      return;
+    }
     setError(null); setMaksamassa(true);
     try{
       const r=await fetch(`${BACKEND_URL}/api/maksu/luo`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({kieli:lang}),
+        body:JSON.stringify({kieli:lang,email}),
       });
       const d=await r.json();
       if(d.ok && d.href){ window.location.href=d.href; } // → Paytrailin maksusivu
@@ -1278,6 +1286,10 @@ function TabTaloyhtion({nakokulma="ostaja",onArviokaynti}){
         </DarkBtn>
       ):(
         <>
+          {/* Sähköposti kuittia varten — pakollinen ennen maksua. */}
+          <div style={{marginBottom:12}}>
+            <FloatInput label={t(lang,"Sähköposti kuittia varten *","Email for the receipt *")} type="email" autoComplete="email" inputMode="email" value={maksuEmail} onChange={e=>setMaksuEmail(e.target.value)}/>
+          </div>
           <DarkBtn onClick={ostaAnalyysi} style={{opacity:maksamassa?0.6:1,cursor:maksamassa?"wait":"pointer"}} disabled={maksamassa}>
             {maksamassa?t(lang,"⏳ Siirrytään maksuun...","⏳ Redirecting to payment..."):t(lang,"Osta analyysi 29,90 € →","Buy analysis €29.90 →")}
           </DarkBtn>
