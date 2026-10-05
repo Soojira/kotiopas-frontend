@@ -1,6 +1,16 @@
 <!doctype html>
 <html lang="fi">
   <head>
+    <!-- Google Tag Manager -->
+    <script>
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-TC9DG22X');
+    </script>
+    <!-- End Google Tag Manager -->
+
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/Asuntoraportti_Logo_32.png" />
     <link rel="apple-touch-icon" href="/Asuntoraportti_Icon_256.png" />
@@ -15,7 +25,8 @@
     <link rel="canonical" href="https://asuntoraportti.fi/" />
 
     <meta name="theme-color" content="#2A1F14" />
-    <!-- iOS PWA-tuki: kun käyttäjä lisää sivun aloitusnäyttöön, se avautuu ilman Safarin palkkeja -->
+
+    <!-- iOS PWA-tuki -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -43,6 +54,7 @@
         margin: 0;
         padding: 0;
       }
+
       body {
         width: 100%;
         overflow-x: hidden;
@@ -50,6 +62,7 @@
         min-height: 100vh;
         min-height: 100dvh;
       }
+
       #root {
         width: 100%;
         margin: 0;
@@ -103,27 +116,45 @@
     }
     </script>
   </head>
+
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-TC9DG22X"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+      </iframe>
+    </noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <div id="root">
       <!-- Staattinen sisältö hakukoneille ja tekoälyille (näkyy ennen kuin React latautuu;
            React korvaa tämän automaattisesti, joten ihmiskäyttäjät eivät näe tätä). -->
       <div style="max-width:760px;margin:0 auto;padding:40px 24px;font-family:system-ui,sans-serif;line-height:1.6;color:#2A2520;">
         <h1>Asuntoraportti – taloyhtiön paperit selkokielellä</h1>
+
         <p><strong>Asuntoraportti</strong> on suomalainen verkkopalvelu, joka kääntää taloyhtiön asiakirjat selkokielelle asunnon ostajille ja myyjille. Lataat taloyhtiön paperit – kuten isännöitsijäntodistuksen, tilinpäätöksen ja remonttisuunnitelmat – ja saat ymmärrettävän, selkokielisen analyysin niiden sisällöstä.</p>
 
         <h2>Kenelle Asuntoraportti on tarkoitettu?</h2>
+
         <p><strong>Asunnon ostajalle:</strong> ymmärrät mitä olet ostamassa ennen kuin teet tarjouksen. Analyysi kertoo selkokielellä taloyhtiön vastikkeet, velat, tulevat remontit ja muut olennaiset asiat, jotka kannattaa tietää ennen asuntokauppaa.</p>
+
         <p><strong>Asunnon myyjälle:</strong> saat apua myyntiin ja voit pyytää maksuttoman arviokäynnin kokeneelta välittäjältä.</p>
 
         <h2>Miten Asuntoraportti toimii?</h2>
+
         <p>Lataat taloyhtiön asiakirjat (PDF) palveluun, ja tekoäly tekee niistä selkokielisen analyysin. Saat tiedot kuukausikuluista, taloyhtiön taloudesta, tulevista remonteista ja mahdollisista riskeistä helposti ymmärrettävässä muodossa. Palvelu on saatavilla suomeksi ja englanniksi.</p>
 
         <h2>Miksi Asuntoraportti?</h2>
+
         <p>Taloyhtiön paperit ovat usein vaikeaselkoisia juuri silloin, kun pitäisi tehdä elämän suurin ostopäätös. Asuntoraportti toimii asuntokaupan tulkkina: se selittää vaikeat asiakirjat selkokielellä, jotta voit tehdä päätöksen tietoon perustuen. Palvelu on riippumaton ja faktoihin perustuva. Asuntoraportti ei korvaa juridista tai sijoitusneuvontaa, vaan toimii päätöksenteon tukena.</p>
 
         <p>Lisätietoja ja palvelun kokeilu: <a href="https://asuntoraportti.fi">asuntoraportti.fi</a></p>
       </div>
     </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
